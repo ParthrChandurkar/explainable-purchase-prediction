@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -28,6 +29,25 @@ from src.data_prep import (
 
 MAX_TOTAL_FEATURES = 300
 TEST_SIZE = 0.20
+
+
+class ThresholdedClassifier:
+    """Persist a fitted probability model together with its decision threshold."""
+
+    def __init__(self, estimator: Pipeline, threshold: float) -> None:
+        self.estimator = estimator
+        self.threshold = float(threshold)
+
+    @property
+    def classes_(self) -> Any:
+        return self.estimator.named_steps["classifier"].classes_
+
+    def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
+        return self.estimator.predict_proba(X)
+
+    def predict(self, X: pd.DataFrame) -> np.ndarray:
+        positive_probability = self.predict_proba(X)[:, 1]
+        return (positive_probability >= self.threshold).astype(int)
 
 
 def audit_existing_encoding_decisions(

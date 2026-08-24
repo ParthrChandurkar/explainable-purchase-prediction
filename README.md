@@ -16,4 +16,6 @@ Phase 3 audits high-cardinality encoding, creates a fixed stratified split, trai
 python -m src.evaluate
 ```
 
+Phase 3b tunes each model's probability cutoff by maximum held-out F1, saves a default-versus-tuned comparison, and stores the selected cutoff with the best pipeline artifact.
+
 SHAP explainability is intentionally deferred to a later phase.
