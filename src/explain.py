@@ -193,6 +193,9 @@ def plot_global_shap(
     plt.savefig(bar_path, dpi=170, bbox_inches="tight")
     plt.close()
 
+    # SHAP shuffles points with NumPy's legacy global generator when drawing a
+    # beeswarm. Reset it here so repeated full-pipeline runs create the same plot.
+    np.random.seed(RANDOM_SEED)
     shap.plots.beeswarm(explanation, max_display=MAX_DISPLAY_FEATURES, show=False)
     plt.title("Global SHAP Beeswarm - Direction and Magnitude")
     plt.tight_layout()
