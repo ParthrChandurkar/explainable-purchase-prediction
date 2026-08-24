@@ -1,0 +1,30 @@
+PHASE 4 - SHAP EXPLAINABILITY SUMMARY
+=====================================
+Loaded classifier: LogisticRegression
+SHAP explainer: LinearExplainer
+Operational threshold: 0.572596
+Corrected transformed features: 52
+Global held-out SHAP sample: 1000 rows (random_state=42)
+For Logistic Regression, SHAP values are contributions on the model's raw log-odds scale.
+
+SELECTED REAL TEST EXAMPLES
+---------------------------
+    example_type  test_position  source_row_index  probability  threshold  prediction  actual_label
+high_probability            201              6865     0.783153   0.572596           1             1
+ low_probability           2842             21403     0.000233   0.572596           0             0
+      borderline           1607              2493     0.572596   0.572596           1             1
+
+TOP LOCAL CONTRIBUTIONS
+-----------------------
+    example_type  test_position  source_row_index  probability  threshold  prediction  actual_label positive_feature_1  positive_shap_1 negative_feature_1  negative_shap_1 positive_feature_2  positive_shap_2 negative_feature_2  negative_shap_2 positive_feature_3  positive_shap_3  negative_feature_3  negative_shap_3
+high_probability            201              6865     0.783153   0.572596           1             1      added_to_cart         3.397188      device_type_0        -0.181131        user_type_0         0.386177     visit_season_3        -0.153099   time_on_site_sec         0.171267 marketing_channel_3        -0.123788
+ low_probability           2842             21403     0.000233   0.572596           0             0      device_type_1         0.144659      added_to_cart        -4.888636        user_type_1         0.091694        user_type_0        -0.315963     visit_season_2         0.064132      visit_season_0        -0.183040
+      borderline           1607              2493     0.572596   0.572596           1             1      added_to_cart         3.397188        user_type_0        -0.315963      device_type_0         0.131164     visit_season_0        -0.183040   time_on_site_sec         0.124398       device_type_1        -0.176806
+
+SAVED FIGURES
+-------------
+- P:\College\Sem VII Acad\IPRM\Project\results\figures\shap_global_bar_best_model.png
+- P:\College\Sem VII Acad\IPRM\Project\results\figures\shap_global_beeswarm_best_model.png
+- P:\College\Sem VII Acad\IPRM\Project\results\figures\shap_local_high_probability.png
+- P:\College\Sem VII Acad\IPRM\Project\results\figures\shap_local_low_probability.png
+- P:\College\Sem VII Acad\IPRM\Project\results\figures\shap_local_borderline.png

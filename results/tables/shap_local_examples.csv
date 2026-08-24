@@ -1,0 +1,4 @@
+example_type,test_position,source_row_index,probability,threshold,prediction,actual_label,positive_feature_1,positive_shap_1,negative_feature_1,negative_shap_1,positive_feature_2,positive_shap_2,negative_feature_2,negative_shap_2,positive_feature_3,positive_shap_3,negative_feature_3,negative_shap_3
+high_probability,201,6865,0.78315339,0.57259600,1,1,added_to_cart,3.39718797,device_type_0,-0.18113126,user_type_0,0.38617656,visit_season_3,-0.15309941,time_on_site_sec,0.17126743,marketing_channel_3,-0.12378768
+low_probability,2842,21403,0.00023272,0.57259600,0,0,device_type_1,0.14465913,added_to_cart,-4.88863635,user_type_1,0.09169383,user_type_0,-0.31596264,visit_season_2,0.06413167,visit_season_0,-0.18304025
+borderline,1607,2493,0.57259600,0.57259600,1,1,added_to_cart,3.39718797,user_type_0,-0.31596264,device_type_0,0.13116401,visit_season_0,-0.18304025,time_on_site_sec,0.12439806,device_type_1,-0.17680560

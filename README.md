@@ -18,4 +18,10 @@ python -m src.evaluate
 
 Phase 3b tunes each model's probability cutoff by maximum held-out F1, saves a default-versus-tuned comparison, and stores the selected cutoff with the best pipeline artifact.
 
-SHAP explainability is intentionally deferred to a later phase.
+Phase 4 loads that artifact without retraining and produces global and local SHAP explanations on the corrected 52-feature representation. Run it with:
+
+```powershell
+python -m src.explain
+```
+
+Business-insight analysis is intentionally deferred to a later phase.
