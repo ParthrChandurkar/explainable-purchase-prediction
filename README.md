@@ -24,4 +24,10 @@ Phase 4 loads that artifact without retraining and produces global and local SHA
 python -m src.explain
 ```
 
-Business-insight analysis is intentionally deferred to a later phase.
+Phase 5 applies transparent probability-and-SHAP rules to every held-out row and saves cautious retail-action candidates with an explicit precision warning. Run it with:
+
+```powershell
+python -m src.insights
+```
+
+The adaptive experiment is intentionally deferred to a later phase.

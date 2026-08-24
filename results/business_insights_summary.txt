@@ -1,0 +1,35 @@
+PHASE 5 - RULE-BASED BUSINESS INSIGHTS SUMMARY
+==============================================
+Rows processed: 5000
+Loaded classifier: LogisticRegression
+Operational threshold: 0.572596
+SHAP explainer reused: LinearExplainer
+Corrected features: 52
+
+CONFIRMED FEATURE GROUPS USED BY RULES
+--------------------------------------
+Engagement: ['pages_viewed', 'time_on_site_sec', 'added_to_cart', 'session_duration_bucket']
+Personalization: ['product_category_0', 'product_category_1', 'product_category_2', 'product_category_3', 'product_category_4', 'product_category_5', 'product_category_6', 'product_category_7', 'location_frequency']
+
+INSPECTABLE RULE ORDER
+----------------------
+1. Top-3 positive product/category or location-frequency driver >= 0.10 SHAP -> Personalized recommendation opportunity
+2. Probability >= threshold + 0.10 -> Candidate for promotion - higher score
+3. Probability >= threshold -> Candidate for promotion - threshold-qualified
+4. Below threshold with top-3 positive engagement driver >= 0.10 SHAP -> Investigate checkout/discount friction
+5. Remaining below-threshold rows -> Retention/engagement nudge
+
+ACTION COUNTS
+-------------
+                           recommended_action  row_count  percent_of_test_rows
+      Personalized recommendation opportunity          0                  0.00
+       Candidate for promotion - higher score       1341                 26.82
+Candidate for promotion - threshold-qualified       1343                 26.86
+       Investigate checkout/discount friction        576                 11.52
+                   Retention/engagement nudge       1740                 34.80
+
+PRECISION CAVEAT
+----------------
+At the tuned threshold, held-out precision is 0.3681. Therefore, candidate-for-promotion flags will include a meaningful share of false positives and should be treated as candidates for low-cost outreach, not as guaranteed purchasers.
+
+Full insights table: P:\College\Sem VII Acad\IPRM\Project\results\tables\business_insights.csv
