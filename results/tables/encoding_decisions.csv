@@ -1,11 +1,11 @@
 column,role,encoding,reason
-customer_id,excluded identifier,none,identifier-like field with 33.77% unique values could encourage memorisation
-session_id,excluded identifier,none,identifier-like field with 100.00% unique values could encourage memorisation
+customer_id,excluded identifier,none,identifier-like field with 8442 unique values (33.77% of rows) could encourage memorisation
+session_id,excluded identifier,none,identifier-like field with 25000 unique values (100.00% of rows) could encourage memorisation
 visit_date,excluded raw date,none,date-like text would create high-cardinality dummy variables; calendar fields are retained separately
 device_type,nominal categorical,one-hot,3 observed labels/codes have no defensible numeric order
 user_type,nominal categorical,one-hot,2 observed labels/codes have no defensible numeric order
 marketing_channel,nominal categorical,one-hot,6 observed labels/codes have no defensible numeric order
-product_id,nominal categorical,one-hot,899 observed labels/codes have no defensible numeric order
+product_id,excluded identifier,none,identifier-like field with 899 unique values (3.60% of rows) could encourage memorisation
 product_category,nominal categorical,one-hot,8 observed labels/codes have no defensible numeric order
 unit_price,numeric,none for trees; standard scaling for logistic regression,quantitative or binary measurement retained as numeric
 quantity,numeric,none for trees; standard scaling for logistic regression,quantitative or binary measurement retained as numeric
@@ -27,4 +27,4 @@ visit_weekday,nominal categorical,one-hot,7 observed labels/codes have no defens
 visit_season,nominal categorical,one-hot,4 observed labels/codes have no defensible numeric order
 session_duration_bucket,ordinal categorical,ordinal,"labels have a natural duration order: ['Very Short', 'Short', 'Long', 'Very Long']"
 revenue_normalized,excluded leakage,none,excluded using the persisted Phase 1 leakage decision
-location,nominal categorical,one-hot,225 observed labels/codes have no defensible numeric order
+location,high-cardinality categorical,frequency,225 observed labels exceed the 20-level one-hot limit; one training-frequency feature avoids expansion

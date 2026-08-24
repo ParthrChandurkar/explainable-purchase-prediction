@@ -1,0 +1,5 @@
+Primary comparison metrics: F1 and ROC-AUC. Accuracy is secondary because the target is imbalanced.
+
+              model  accuracy  precision  recall     f1  roc_auc  primary_score
+Logistic Regression    0.5744     0.3452  0.9982 0.5130   0.7615         0.6373
+      Random Forest    0.7498     0.3735  0.1683 0.2320   0.7525         0.4923

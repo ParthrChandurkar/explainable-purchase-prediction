@@ -1,0 +1,29 @@
+PHASE 3 - MODELING AND EVALUATION SUMMARY
+=========================================
+Fixed target: purchased
+Training rows: 20000
+Test rows: 5000
+Split: stratified, test_size=0.20, random_state=42
+
+HIGH-CARDINALITY ENCODING AUDIT (COMPLETED BEFORE TRAINING)
+-----------------------------------------------------------
+    column  unique_values previous_encoding  previous_output_columns         correction                                                                                       reason
+product_id            899           one-hot                      899               drop raw high-cardinality identifier has no stable ordinal meaning and may encourage memorisation
+  location            225           one-hot                      225 frequency encoding                retain prevalence information in one numeric feature without using the target
+
+Corrected tree feature count: 52
+Corrected logistic feature count: 52
+XGBoost skipped: it is outside the project-wide allowed dependency list; no third model was forced.
+
+MODEL COMPARISON
+----------------
+F1 and ROC-AUC are primary; accuracy is secondary because the target is imbalanced.
+              model  accuracy  precision  recall     f1  roc_auc  primary_score
+Logistic Regression    0.5744     0.3452  0.9982 0.5130   0.7615         0.6373
+      Random Forest    0.7498     0.3735  0.1683 0.2320   0.7525         0.4923
+
+Best model by mean(F1, ROC-AUC): Logistic Regression
+Saved pipeline: P:\College\Sem VII Acad\IPRM\Project\models\best_model.joblib
+Confusion matrices:
+- P:\College\Sem VII Acad\IPRM\Project\results\figures\confusion_matrix_logistic_regression.png
+- P:\College\Sem VII Acad\IPRM\Project\results\figures\confusion_matrix_random_forest.png

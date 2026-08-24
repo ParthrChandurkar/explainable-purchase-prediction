@@ -1,0 +1,3 @@
+column,unique_values,previous_encoding,previous_output_columns,correction,reason
+product_id,899,one-hot,899,drop,raw high-cardinality identifier has no stable ordinal meaning and may encourage memorisation
+location,225,one-hot,225,frequency encoding,retain prevalence information in one numeric feature without using the target

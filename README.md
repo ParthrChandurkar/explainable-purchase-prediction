@@ -10,4 +10,10 @@ Phase 2 adds documented cleaning, categorical encoding, separate tree/logistic-r
 python -m src.eda
 ```
 
-Predictive modeling is intentionally deferred to a later phase.
+Phase 3 audits high-cardinality encoding, creates a fixed stratified split, trains class-balanced Logistic Regression and Random Forest pipelines, evaluates held-out predictions, and saves the best complete pipeline. Run it with:
+
+```powershell
+python -m src.evaluate
+```
+
+SHAP explainability is intentionally deferred to a later phase.

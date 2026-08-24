@@ -15,6 +15,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
@@ -24,6 +25,45 @@ RANDOM_SEED = 42
 HIGH_MISSING_THRESHOLD = 40.0
 HIGH_CARDINALITY_ID_RATIO = 0.05
 DURATION_ORDER = ("very short", "short", "medium", "long", "very long")
+MAX_ONE_HOT_CARDINALITY = 20
+
+
+class FrequencyEncoder(BaseEstimator, TransformerMixin):
+    """Encode each category with its training-set relative frequency.
+
+    The transformer is deliberately unsupervised: it never reads the target.
+    Unseen categories receive 0, and fitting it inside a pipeline prevents test
+    data from influencing the learned frequencies.
+    """
+
+    def fit(self, X: Any, y: Any = None) -> "FrequencyEncoder":
+        values = np.asarray(X, dtype=object)
+        if values.ndim == 1:
+            values = values.reshape(-1, 1)
+        self.n_features_in_ = values.shape[1]
+        self.frequency_maps_ = [
+            pd.Series(values[:, index]).value_counts(normalize=True, dropna=False).to_dict()
+            for index in range(self.n_features_in_)
+        ]
+        return self
+
+    def transform(self, X: Any) -> np.ndarray:
+        if not hasattr(self, "frequency_maps_"):
+            raise RuntimeError("FrequencyEncoder must be fitted before transform.")
+        values = np.asarray(X, dtype=object)
+        if values.ndim == 1:
+            values = values.reshape(-1, 1)
+        if values.shape[1] != self.n_features_in_:
+            raise ValueError("The number of columns differs from the fitted data.")
+        encoded = np.zeros(values.shape, dtype=float)
+        for index, mapping in enumerate(self.frequency_maps_):
+            encoded[:, index] = pd.Series(values[:, index]).map(mapping).fillna(0.0)
+        return encoded
+
+    def get_feature_names_out(self, input_features: Any = None) -> np.ndarray:
+        if input_features is None:
+            input_features = [f"x{index}" for index in range(self.n_features_in_)]
+        return np.asarray([f"{feature}_frequency" for feature in input_features], dtype=object)
 
 # Generic language used to find purchase/conversion outcome fields. These are
 # concepts, not assumed dataset column names.
@@ -255,6 +295,7 @@ def identify_feature_roles(
     roles: dict[str, Any] = {
         "numeric": [],
         "nominal": [],
+        "frequency": [],
         "ordinal": [],
         "ordinal_categories": [],
         "excluded": [],
@@ -295,14 +336,20 @@ def identify_feature_roles(
                     "reason": "date-like text would create high-cardinality dummy variables; calendar fields are retained separately",
                 }
             )
-        elif "id" in parts and unique_ratio > HIGH_CARDINALITY_ID_RATIO:
+        elif "id" in parts and (
+            unique_ratio > HIGH_CARDINALITY_ID_RATIO
+            or unique_count > MAX_ONE_HOT_CARDINALITY
+        ):
             roles["excluded"].append(column)
             roles["decisions"].append(
                 {
                     "column": column,
                     "role": "excluded identifier",
                     "encoding": "none",
-                    "reason": f"identifier-like field with {unique_ratio:.2%} unique values could encourage memorisation",
+                    "reason": (
+                        f"identifier-like field with {unique_count} unique values "
+                        f"({unique_ratio:.2%} of rows) could encourage memorisation"
+                    ),
                 }
             )
         elif "bucket" in parts and not pd.api.types.is_numeric_dtype(series):
@@ -334,15 +381,29 @@ def identify_feature_roles(
             or bool(parts & nominal_name_terms)
             or ("id" in parts and unique_ratio <= HIGH_CARDINALITY_ID_RATIO)
         ):
-            roles["nominal"].append(column)
-            roles["decisions"].append(
-                {
-                    "column": column,
-                    "role": "nominal categorical",
-                    "encoding": "one-hot",
-                    "reason": f"{unique_count} observed labels/codes have no defensible numeric order",
-                }
-            )
+            if unique_count > MAX_ONE_HOT_CARDINALITY:
+                roles["frequency"].append(column)
+                roles["decisions"].append(
+                    {
+                        "column": column,
+                        "role": "high-cardinality categorical",
+                        "encoding": "frequency",
+                        "reason": (
+                            f"{unique_count} observed labels exceed the "
+                            f"{MAX_ONE_HOT_CARDINALITY}-level one-hot limit; one training-frequency feature avoids expansion"
+                        ),
+                    }
+                )
+            else:
+                roles["nominal"].append(column)
+                roles["decisions"].append(
+                    {
+                        "column": column,
+                        "role": "nominal categorical",
+                        "encoding": "one-hot",
+                        "reason": f"{unique_count} observed labels/codes have no defensible numeric order",
+                    }
+                )
         else:
             roles["numeric"].append(column)
             roles["decisions"].append(
@@ -367,6 +428,7 @@ def build_model_preprocessors(
     """
     numeric_columns = roles["numeric"]
     nominal_columns = roles["nominal"]
+    frequency_columns = roles["frequency"]
     ordinal_columns = roles["ordinal"]
 
     numeric_tree = Pipeline([("imputer", SimpleImputer(strategy="median"))])
@@ -391,6 +453,22 @@ def build_model_preprocessors(
     if nominal_columns:
         tree_steps.append(("nominal", nominal, nominal_columns))
         linear_steps.append(("nominal", nominal, nominal_columns))
+    if frequency_columns:
+        frequency_tree = Pipeline(
+            [
+                ("imputer", SimpleImputer(strategy="most_frequent")),
+                ("frequency", FrequencyEncoder()),
+            ]
+        )
+        frequency_linear = Pipeline(
+            [
+                ("imputer", SimpleImputer(strategy="most_frequent")),
+                ("frequency", FrequencyEncoder()),
+                ("scaler", StandardScaler()),
+            ]
+        )
+        tree_steps.append(("frequency", frequency_tree, frequency_columns))
+        linear_steps.append(("frequency", frequency_linear, frequency_columns))
     if ordinal_columns:
         ordinal = Pipeline(
             [
