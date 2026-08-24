@@ -1,4 +1,4 @@
-# Indian E-Commerce Customer Behaviour ML Project
+# Explainable Purchase Prediction
 
 Undergraduate software project built from the fixed Kaggle dataset **Indian E-Commerce Customer Behavior & Purchase**.
 
