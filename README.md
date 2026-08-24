@@ -30,4 +30,10 @@ Phase 5 applies transparent probability-and-SHAP rules to every held-out row and
 python -m src.insights
 ```
 
-The adaptive experiment is intentionally deferred to a later phase.
+Phase 6 uses the Phase 1-confirmed `visit_date` field for a real chronological earlier/later batch experiment. It trains the Phase 3b Logistic Regression model family on the earlier batch and applies an explicit F1-drop trigger before any retraining. The implementation also contains a fixed random-batch fallback, but that path is explicitly labeled a STAND-IN simulation rather than real temporal drift. Run Phase 6 with:
+
+```powershell
+python -m src.adaptive
+```
+
+Final application integration is intentionally deferred to the next phase.

@@ -1,0 +1,3 @@
+stage,model_state,evaluation_scope,train_rows,evaluation_rows,threshold,accuracy,precision,recall,f1,roc_auc,retrain_triggered,trigger_reason
+before_adaptive_decision,initial_model_trained_on_earlier_batch,later_batch,17434,7566,0.57259600,0.60467883,0.35498995,0.93971631,0.51531356,0.76708716,False,later F1 0.515314 >= reference F1 0.519044 - trigger drop 0.05 = 0.469044
+after_adaptive_decision,initial_model_retained_no_retrain,same_later_batch_no_retrain,17434,7566,0.57259600,0.60467883,0.35498995,0.93971631,0.51531356,0.76708716,False,later F1 0.515314 >= reference F1 0.519044 - trigger drop 0.05 = 0.469044

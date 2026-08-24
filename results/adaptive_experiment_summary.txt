@@ -1,0 +1,26 @@
+PHASE 6 - ADAPTIVE EXPERIMENT SUMMARY
+=====================================
+Source CSV: P:\College\Sem VII Acad\IPRM\Project\data\Ecommerce.csv
+Batch mode: real_chronological_split
+Batch description: Real date-based split: earlier dates <= 2024-09-11, later dates > 2024-09-11.
+Phase 1-confirmed time column: visit_date
+Earlier rows: 17434
+Later rows: 7566
+Model family: Logistic Regression
+Features learned from earlier batch only: 49
+Fixed operational threshold: 0.572596
+Phase 3b reference F1: 0.519044
+Retrain trigger: later F1 < reference F1 - 0.05
+Trigger floor: 0.469044
+Trigger result: False
+Reason: later F1 0.515314 >= reference F1 0.519044 - trigger drop 0.05 = 0.469044
+
+BEFORE/AFTER TABLE
+------------------
+                   stage                            model_state            evaluation_scope  train_rows  evaluation_rows  threshold  accuracy  precision   recall       f1  roc_auc  retrain_triggered                                                            trigger_reason
+before_adaptive_decision initial_model_trained_on_earlier_batch                 later_batch       17434             7566   0.572596  0.604679   0.354990 0.939716 0.515314 0.767087              False later F1 0.515314 >= reference F1 0.519044 - trigger drop 0.05 = 0.469044
+ after_adaptive_decision      initial_model_retained_no_retrain same_later_batch_no_retrain       17434             7566   0.572596  0.604679   0.354990 0.939716 0.515314 0.767087              False later F1 0.515314 >= reference F1 0.519044 - trigger drop 0.05 = 0.469044
+
+No improvement is assumed: the table reports the observed values, including an unchanged after-state when retraining is not triggered.
+Saved table: P:\College\Sem VII Acad\IPRM\Project\results\tables\adaptive_before_after.csv
+Saved chart: P:\College\Sem VII Acad\IPRM\Project\results\figures\adaptive_before_after.png
