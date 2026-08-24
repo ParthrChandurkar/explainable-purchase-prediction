@@ -1,0 +1,106 @@
+PHASE 2 - EDA AND PREPROCESSING SUMMARY
+=======================================
+Source CSV: P:\College\Sem VII Acad\IPRM\Project\data\Ecommerce.csv
+Fixed Phase 1 target: purchased
+Persisted Phase 1 leakage exclusions: ['revenue', 'cart_abandoned', 'rating', 'review_text', 'review_helpful_votes', 'payment_method', 'revenue_normalized']
+
+DUPLICATES
+----------
+Initially detected and removed: 0
+Created by imputation and removed: 0
+Final row count: 25000
+
+MISSING-VALUE DECISIONS
+-----------------------
+- customer_id [numeric]: retain (no imputation needed) - 0.00% missing
+- session_id [numeric]: retain (no imputation needed) - 0.00% missing
+- visit_date [categorical/text]: retain (no imputation needed) - 0.00% missing
+- device_type [numeric]: retain (no imputation needed) - 0.00% missing
+- user_type [numeric]: retain (no imputation needed) - 0.00% missing
+- marketing_channel [numeric]: retain (no imputation needed) - 0.00% missing
+- product_id [numeric]: retain (no imputation needed) - 0.00% missing
+- product_category [numeric]: retain (no imputation needed) - 0.00% missing
+- unit_price [numeric]: retain (no imputation needed) - 0.00% missing
+- quantity [numeric]: retain (no imputation needed) - 0.00% missing
+- discount_percent [numeric]: retain (no imputation needed) - 0.00% missing
+- discount_amount [numeric]: retain (no imputation needed) - 0.00% missing
+- revenue [numeric]: retain (no imputation needed) - 0.00% missing
+- pages_viewed [numeric]: retain (no imputation needed) - 0.00% missing
+- time_on_site_sec [numeric]: retain (no imputation needed) - 0.00% missing
+- added_to_cart [numeric]: retain (no imputation needed) - 0.00% missing
+- purchased [numeric]: retain (no imputation needed) - 0.00% missing
+- cart_abandoned [numeric]: retain (no imputation needed) - 0.00% missing
+- rating [numeric]: retain (no imputation needed) - 0.00% missing
+- review_text [numeric]: retain (no imputation needed) - 0.00% missing
+- review_helpful_votes [numeric]: retain (no imputation needed) - 0.00% missing
+- payment_method [numeric]: retain (no imputation needed) - 0.00% missing
+- visit_day [numeric]: retain (no imputation needed) - 0.00% missing
+- visit_month [numeric]: retain (no imputation needed) - 0.00% missing
+- visit_weekday [numeric]: retain (no imputation needed) - 0.00% missing
+- visit_season [numeric]: retain (no imputation needed) - 0.00% missing
+- session_duration_bucket [categorical/text]: retain (no imputation needed) - 0.00% missing
+- revenue_normalized [numeric]: retain (no imputation needed) - 0.00% missing
+- location [numeric]: retain (no imputation needed) - 0.00% missing
+
+ENCODING AND FEATURE-ROLE DECISIONS
+-----------------------------------
+- customer_id: excluded identifier; none - identifier-like field with 33.77% unique values could encourage memorisation
+- session_id: excluded identifier; none - identifier-like field with 100.00% unique values could encourage memorisation
+- visit_date: excluded raw date; none - date-like text would create high-cardinality dummy variables; calendar fields are retained separately
+- device_type: nominal categorical; one-hot - 3 observed labels/codes have no defensible numeric order
+- user_type: nominal categorical; one-hot - 2 observed labels/codes have no defensible numeric order
+- marketing_channel: nominal categorical; one-hot - 6 observed labels/codes have no defensible numeric order
+- product_id: nominal categorical; one-hot - 899 observed labels/codes have no defensible numeric order
+- product_category: nominal categorical; one-hot - 8 observed labels/codes have no defensible numeric order
+- unit_price: numeric; none for trees; standard scaling for logistic regression - quantitative or binary measurement retained as numeric
+- quantity: numeric; none for trees; standard scaling for logistic regression - quantitative or binary measurement retained as numeric
+- discount_percent: numeric; none for trees; standard scaling for logistic regression - quantitative or binary measurement retained as numeric
+- discount_amount: numeric; none for trees; standard scaling for logistic regression - quantitative or binary measurement retained as numeric
+- revenue: excluded leakage; none - excluded using the persisted Phase 1 leakage decision
+- pages_viewed: numeric; none for trees; standard scaling for logistic regression - quantitative or binary measurement retained as numeric
+- time_on_site_sec: numeric; none for trees; standard scaling for logistic regression - quantitative or binary measurement retained as numeric
+- added_to_cart: numeric; none for trees; standard scaling for logistic regression - quantitative or binary measurement retained as numeric
+- purchased: target; none - fixed Phase 1 label
+- cart_abandoned: excluded leakage; none - excluded using the persisted Phase 1 leakage decision
+- rating: excluded leakage; none - excluded using the persisted Phase 1 leakage decision
+- review_text: excluded leakage; none - excluded using the persisted Phase 1 leakage decision
+- review_helpful_votes: excluded leakage; none - excluded using the persisted Phase 1 leakage decision
+- payment_method: excluded leakage; none - excluded using the persisted Phase 1 leakage decision
+- visit_day: numeric; none for trees; standard scaling for logistic regression - quantitative or binary measurement retained as numeric
+- visit_month: nominal categorical; one-hot - 12 observed labels/codes have no defensible numeric order
+- visit_weekday: nominal categorical; one-hot - 7 observed labels/codes have no defensible numeric order
+- visit_season: nominal categorical; one-hot - 4 observed labels/codes have no defensible numeric order
+- session_duration_bucket: ordinal categorical; ordinal - labels have a natural duration order: ['Very Short', 'Short', 'Long', 'Very Long']
+- revenue_normalized: excluded leakage; none - excluded using the persisted Phase 1 leakage decision
+- location: nominal categorical; one-hot - 225 observed labels/codes have no defensible numeric order
+
+MODEL-SPECIFIC FEATURE VIEWS
+----------------------------
+Tree view shape: (25000, 1175) (numeric fields not scaled)
+Logistic-regression view shape: (25000, 1175) (numeric fields standard-scaled)
+The dimension check uses the complete cleaned data only for Phase 2 verification; later modeling must fit preprocessing on training folds.
+
+IQR OUTLIER CHECK (NO ROWS REMOVED)
+-----------------------------------
+          column       q1        q3     iqr  lower_bound  upper_bound  outlier_count  outlier_percent                                               decision
+    pages_viewed   7.0000   19.0000  12.000     -11.0000      37.0000              0            0.000 retain; report only pending domain/model justification
+time_on_site_sec 453.0000 1355.0000 902.000    -900.0000    2708.0000              0            0.000 retain; report only pending domain/model justification
+        quantity   1.0000    3.0000   2.000      -2.0000       6.0000              0            0.000 retain; report only pending domain/model justification
+ discount_amount   0.0000  240.3550 240.355    -360.5325     600.8875           1883            7.532 retain; report only pending domain/model justification
+discount_percent   0.0000   15.0000  15.000     -22.5000      37.5000              0            0.000 retain; report only pending domain/model justification
+      unit_price 395.2225 1096.8425 701.620    -657.2075    2149.2725              0            0.000 retain; report only pending domain/model justification
+
+CLASS BALANCE
+-------------
+- class 0: 19384 rows (77.54%)
+- class 1: 5616 rows (22.46%)
+The target is moderately imbalanced (majority:minority ratio 3.45:1). Later evaluation should use stratified splits and metrics beyond accuracy.
+
+Behaviour fields selected for plots: ['added_to_cart', 'pages_viewed', 'session_duration_bucket', 'time_on_site_sec']
+Saved figures:
+- P:\College\Sem VII Acad\IPRM\Project\results\figures\target_class_distribution.png
+- P:\College\Sem VII Acad\IPRM\Project\results\figures\correlation_heatmap.png
+- P:\College\Sem VII Acad\IPRM\Project\results\figures\behaviour_added_to_cart_vs_target.png
+- P:\College\Sem VII Acad\IPRM\Project\results\figures\behaviour_pages_viewed_vs_target.png
+- P:\College\Sem VII Acad\IPRM\Project\results\figures\behaviour_session_duration_bucket_vs_target.png
+- P:\College\Sem VII Acad\IPRM\Project\results\figures\behaviour_time_on_site_sec_vs_target.png

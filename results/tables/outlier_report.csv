@@ -1,0 +1,7 @@
+column,q1,q3,iqr,lower_bound,upper_bound,outlier_count,outlier_percent,decision
+pages_viewed,7.0,19.0,12.0,-11.0,37.0,0,0.0,retain; report only pending domain/model justification
+time_on_site_sec,453.0,1355.0,902.0,-900.0,2708.0,0,0.0,retain; report only pending domain/model justification
+quantity,1.0,3.0,2.0,-2.0,6.0,0,0.0,retain; report only pending domain/model justification
+discount_amount,0.0,240.35500000000002,240.35500000000002,-360.5325,600.8875,1883,7.532,retain; report only pending domain/model justification
+discount_percent,0.0,15.0,15.0,-22.5,37.5,0,0.0,retain; report only pending domain/model justification
+unit_price,395.2225,1096.8425,701.6199999999999,-657.2074999999998,2149.2725,0,0.0,retain; report only pending domain/model justification

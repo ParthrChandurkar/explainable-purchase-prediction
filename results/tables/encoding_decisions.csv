@@ -1,0 +1,30 @@
+column,role,encoding,reason
+customer_id,excluded identifier,none,identifier-like field with 33.77% unique values could encourage memorisation
+session_id,excluded identifier,none,identifier-like field with 100.00% unique values could encourage memorisation
+visit_date,excluded raw date,none,date-like text would create high-cardinality dummy variables; calendar fields are retained separately
+device_type,nominal categorical,one-hot,3 observed labels/codes have no defensible numeric order
+user_type,nominal categorical,one-hot,2 observed labels/codes have no defensible numeric order
+marketing_channel,nominal categorical,one-hot,6 observed labels/codes have no defensible numeric order
+product_id,nominal categorical,one-hot,899 observed labels/codes have no defensible numeric order
+product_category,nominal categorical,one-hot,8 observed labels/codes have no defensible numeric order
+unit_price,numeric,none for trees; standard scaling for logistic regression,quantitative or binary measurement retained as numeric
+quantity,numeric,none for trees; standard scaling for logistic regression,quantitative or binary measurement retained as numeric
+discount_percent,numeric,none for trees; standard scaling for logistic regression,quantitative or binary measurement retained as numeric
+discount_amount,numeric,none for trees; standard scaling for logistic regression,quantitative or binary measurement retained as numeric
+revenue,excluded leakage,none,excluded using the persisted Phase 1 leakage decision
+pages_viewed,numeric,none for trees; standard scaling for logistic regression,quantitative or binary measurement retained as numeric
+time_on_site_sec,numeric,none for trees; standard scaling for logistic regression,quantitative or binary measurement retained as numeric
+added_to_cart,numeric,none for trees; standard scaling for logistic regression,quantitative or binary measurement retained as numeric
+purchased,target,none,fixed Phase 1 label
+cart_abandoned,excluded leakage,none,excluded using the persisted Phase 1 leakage decision
+rating,excluded leakage,none,excluded using the persisted Phase 1 leakage decision
+review_text,excluded leakage,none,excluded using the persisted Phase 1 leakage decision
+review_helpful_votes,excluded leakage,none,excluded using the persisted Phase 1 leakage decision
+payment_method,excluded leakage,none,excluded using the persisted Phase 1 leakage decision
+visit_day,numeric,none for trees; standard scaling for logistic regression,quantitative or binary measurement retained as numeric
+visit_month,nominal categorical,one-hot,12 observed labels/codes have no defensible numeric order
+visit_weekday,nominal categorical,one-hot,7 observed labels/codes have no defensible numeric order
+visit_season,nominal categorical,one-hot,4 observed labels/codes have no defensible numeric order
+session_duration_bucket,ordinal categorical,ordinal,"labels have a natural duration order: ['Very Short', 'Short', 'Long', 'Very Long']"
+revenue_normalized,excluded leakage,none,excluded using the persisted Phase 1 leakage decision
+location,nominal categorical,one-hot,225 observed labels/codes have no defensible numeric order
