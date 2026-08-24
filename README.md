@@ -31,6 +31,16 @@ python main.py
 
 Each module can still be run independently with commands such as `python -m src.data_prep`, `python -m src.eda`, or `python -m src.adaptive`.
 
+## Optional results dashboard
+
+After `python main.py` has populated `results/`, launch the read-only Streamlit dashboard with:
+
+```powershell
+streamlit run dashboard/app.py
+```
+
+The dashboard reads only the saved summaries, tables, prediction examples, and figures. It does not load the training dataset, retrain a model, call an external service, or modify pipeline outputs. Its six tabs cover the dataset overview, customer analytics, prediction results, SHAP explanations, business insights, and the adaptive comparison.
+
 ## Generated outputs
 
 `results/` is rebuilt from the real dataset and contains:
