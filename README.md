@@ -16,7 +16,7 @@ All dataset findings, feature names, thresholds, metrics, predictions, explanati
 - 🔎 **Explainable AI** — global SHAP importance, beeswarm analysis, and local explanations for real test examples.
 - 💡 **Retail decision support** — inspectable rules that convert probabilities and SHAP drivers into cautious action suggestions.
 - 🔄 **Adaptive experiment** — offline chronological evaluation with a transparent conditional-retraining trigger.
-- 🖥️ **Read-only dashboard** — a Streamlit interface built entirely from already-saved results.
+- 🖥️ **Interactive dashboard** — saved-result exploration plus new-customer scoring through the already-fitted model.
 - 📓 **Faculty-ready notebooks** — six executed notebooks presenting the complete workflow in order.
 
 ## 🧭 Pipeline at a glance
@@ -44,7 +44,7 @@ flowchart LR
 ```text
 .
 ├── dashboard/
-│   └── app.py                         # Read-only Streamlit dashboard
+│   └── app.py                         # Dashboard and saved-model scoring interface
 ├── data/
 │   └── Ecommerce.csv                  # Kaggle CSV placed here
 ├── models/
@@ -166,16 +166,17 @@ Run the pipeline at least once so that `results/` is populated, and then start S
 streamlit run dashboard/app.py
 ```
 
-The dashboard contains six tabs:
+The dashboard uses a clear left-side navigation menu with these sections:
 
 1. **Dataset Overview**
 2. **Customer Analytics / EDA**
 3. **Purchase Prediction Results**
-4. **SHAP Explanation Viewer**
-5. **Business Insights**
-6. **Adaptive Before/After Comparison**
+4. **Live Prediction** — score a manually entered customer profile or an uploaded CSV.
+5. **SHAP Explanation Viewer**
+6. **Business Insights**
+7. **Adaptive Before/After Comparison**
 
-The dashboard is intentionally read-only. It reads the saved summaries, tables, predictions, and figures; it does not retrain models, call external services, or modify pipeline outputs.
+The dashboard reads saved summaries, tables, predictions, and figures. The **Live Prediction** page additionally loads `models/best_model.joblib` to score new customer rows using the fitted preprocessing and tuned threshold. It does not retrain the model, call external services, store uploaded data, or modify pipeline outputs.
 
 ## 📊 Understanding the generated results
 

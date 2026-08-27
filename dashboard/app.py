@@ -1,23 +1,31 @@
-"""Read-only Streamlit dashboard for the saved Phase 1-6 artifacts.
+"""RetailIQ dashboard for saved artifacts and new customer scoring.
 
-This app never loads the training CSV, fits preprocessing, or retrains a model.
-Every number, table, and image comes from files already written under results/.
+The dashboard never retrains a model. It can load the saved best-model artifact
+to score user-entered rows or an uploaded CSV using the fitted preprocessing.
+All analysis figures and phase summaries still come from saved result files.
 """
 
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
+import joblib
 import pandas as pd
 import streamlit as st
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    # Streamlit starts this file from dashboard/, while the saved model refers
+    # to the project-level src package when it is unpickled.
+    sys.path.insert(0, str(PROJECT_ROOT))
 RESULTS_DIR = PROJECT_ROOT / "results"
 FIGURES_DIR = RESULTS_DIR / "figures"
 TABLES_DIR = RESULTS_DIR / "tables"
 PREDICTIONS_DIR = RESULTS_DIR / "predictions"
+MODEL_PATH = PROJECT_ROOT / "models" / "best_model.joblib"
 
 
 st.set_page_config(
@@ -104,6 +112,46 @@ def load_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+@st.cache_resource(show_spinner=False)
+def load_best_model():
+    """Load the already-fitted threshold-aware model without retraining."""
+    return joblib.load(MODEL_PATH)
+
+
+def live_prediction_schema(model) -> dict[str, dict[str, object]]:
+    """Read required user inputs from the fitted preprocessing pipeline."""
+    preprocessor = model.estimator.named_steps["preprocessor"]
+    schema: dict[str, dict[str, object]] = {}
+    for name, transformer, columns in preprocessor.transformers_:
+        if name == "remainder" or not isinstance(columns, list):
+            continue
+        if name == "numeric":
+            medians = transformer.named_steps["imputer"].statistics_
+            for column, median in zip(columns, medians):
+                schema[column] = {"kind": "numeric", "default": float(median)}
+        elif name == "nominal":
+            categories = transformer.named_steps["one_hot"].categories_
+            for column, choices in zip(columns, categories):
+                schema[column] = {
+                    "kind": "choice",
+                    "choices": [str(value) for value in choices],
+                    "default": str(choices[0]),
+                }
+        elif name == "frequency":
+            defaults = transformer.named_steps["imputer"].statistics_
+            for column, default in zip(columns, defaults):
+                schema[column] = {"kind": "text", "default": str(default)}
+        elif name == "ordinal":
+            categories = transformer.named_steps["ordinal"].categories_
+            for column, choices in zip(columns, categories):
+                schema[column] = {
+                    "kind": "choice",
+                    "choices": [str(value) for value in choices],
+                    "default": str(choices[0]),
+                }
+    return schema
+
+
 def require_files(paths: list[Path]) -> None:
     """Stop with an actionable message when the pipeline has not been run."""
     missing = [path for path in paths if not path.is_file()]
@@ -142,8 +190,12 @@ required_files = [
     FIGURES_DIR / "shap_global_bar_best_model.png",
     FIGURES_DIR / "shap_global_beeswarm_best_model.png",
     FIGURES_DIR / "adaptive_before_after.png",
+    MODEL_PATH,
 ]
 require_files(required_files)
+
+best_model = load_best_model()
+prediction_schema = live_prediction_schema(best_model)
 
 dataset_summary = load_text(RESULTS_DIR / "dataset_summary.txt")
 eda_summary = load_text(RESULTS_DIR / "eda_preprocessing_summary.txt")
@@ -174,8 +226,23 @@ with st.sidebar:
     st.caption("Explainable purchase intelligence")
     st.markdown("---")
     st.markdown("**Dashboard mode**")
-    st.success("Saved-results viewer")
-    st.caption("No model training · No API calls · No live customer data")
+    st.success("Saved analysis + live scoring")
+    st.caption("No retraining · No API calls · No data is stored")
+    st.markdown("---")
+    st.markdown("**Navigate**")
+    view = st.radio(
+        "Dashboard section",
+        [
+            "Overview",
+            "Customer analytics",
+            "Prediction results",
+            "Live prediction",
+            "SHAP viewer",
+            "Business insights",
+            "Adaptive experiment",
+        ],
+        label_visibility="collapsed",
+    )
     st.markdown("---")
     st.markdown("**Artifact health**")
     st.markdown(f"✓ {len(list(FIGURES_DIR.glob('*.png')))} saved figures")
@@ -201,18 +268,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-tabs = st.tabs(
-    [
-        "Overview",
-        "Customer analytics",
-        "Prediction results",
-        "SHAP viewer",
-        "Business insights",
-        "Adaptive experiment",
-    ]
-)
+st.caption(f"Viewing: **{view}** · Select another section from the left-side navigation.")
 
-with tabs[0]:
+if view == "Overview":
     section("Dataset at a glance", "The structural facts and project decisions saved during Phase 1.")
     cols = st.columns(4)
     cols[0].metric("Rows", f"{row_count:,}" if row_count is not None else "See summary")
@@ -226,9 +284,9 @@ with tabs[0]:
     with right:
         st.markdown("### What this dashboard represents")
         st.markdown(
-            '<div class="note-card"><b>End-to-end evidence, not a live scoring service.</b><br><br>'
-            "The app reads the exact artifacts produced by the six project phases. It does not open the training CSV, "
-            "load the model, or generate new predictions.</div>",
+            '<div class="note-card"><b>End-to-end evidence with optional live scoring.</b><br><br>'
+            "The saved analysis comes from the six project phases. The Live prediction page uses the already-fitted "
+            "best-model artifact to score new rows, but it never retrains the model or stores uploaded data.</div>",
             unsafe_allow_html=True,
         )
         st.markdown("#### Pipeline coverage")
@@ -243,7 +301,7 @@ with tabs[0]:
     with st.expander("Open the complete Phase 1 dataset summary"):
         st.code(dataset_summary, language=None)
 
-with tabs[1]:
+if view == "Customer analytics":
     section("Customer analytics & EDA", "Saved Phase 2 views of behaviour, class balance, association, encoding, and outliers.")
     image_panel(FIGURES_DIR / "correlation_heatmap.png", "Numeric association heatmap")
 
@@ -265,7 +323,7 @@ with tabs[1]:
         with decision_tabs[2]:
             st.dataframe(load_csv(TABLES_DIR / "outlier_report.csv"), hide_index=True, width="stretch")
 
-with tabs[2]:
+if view == "Prediction results":
     section("Purchase prediction results", "Held-out metrics, tuned cutoffs, confusion matrices, and explained sample predictions.")
     metrics = st.columns(4)
     metrics[0].metric("Selected model", str(best_tuned["model"]))
@@ -301,7 +359,85 @@ with tabs[2]:
     with st.expander("Open the complete modeling summary"):
         st.code(model_summary, language=None)
 
-with tabs[3]:
+if view == "Live prediction":
+    section(
+        "Live purchase prediction",
+        "Enter one customer profile or upload a CSV. The saved best model scores the data using its fitted preprocessing; no retraining occurs.",
+    )
+    st.markdown(
+        '<div class="note-card"><b>How to use this page:</b> complete the form for one customer, or upload a CSV containing the required input columns. '
+        "The dashboard returns a purchase probability and the tuned threshold-based prediction. Uploaded files are used only in the current browser session.</div>",
+        unsafe_allow_html=True,
+    )
+
+    required_input_columns = list(prediction_schema)
+    with st.form("single_customer_prediction"):
+        st.markdown("### Enter customer behaviour and session details")
+        form_columns = st.columns(2, gap="large")
+        customer_values: dict[str, object] = {}
+        for index, (column, details) in enumerate(prediction_schema.items()):
+            field = form_columns[index % 2]
+            label = column.replace("_", " ").title()
+            with field:
+                if details["kind"] == "numeric":
+                    customer_values[column] = st.number_input(
+                        label,
+                        value=float(details["default"]),
+                        format="%.4f",
+                        key=f"live_{column}",
+                    )
+                elif details["kind"] == "choice":
+                    choices = list(details["choices"])
+                    customer_values[column] = st.selectbox(
+                        label,
+                        choices,
+                        index=choices.index(str(details["default"])),
+                        key=f"live_{column}",
+                    )
+                else:
+                    customer_values[column] = st.text_input(
+                        label,
+                        value=str(details["default"]),
+                        key=f"live_{column}",
+                    )
+        single_submitted = st.form_submit_button("Predict purchase likelihood", type="primary")
+
+    if single_submitted:
+        new_customer = pd.DataFrame([customer_values], columns=required_input_columns)
+        probability = float(best_model.predict_proba(new_customer)[0, 1])
+        prediction = int(probability >= best_model.threshold)
+        metric_columns = st.columns(3)
+        metric_columns[0].metric("Purchase probability", f"{probability:.2%}")
+        metric_columns[1].metric("Tuned threshold", f"{best_model.threshold:.4f}")
+        metric_columns[2].metric("Prediction", "Likely to purchase" if prediction else "Less likely to purchase")
+        if prediction:
+            st.success("This profile is above the tuned threshold. Treat it as a candidate for a retail action, not a purchase guarantee.")
+        else:
+            st.info("This profile is below the tuned threshold. Consider an engagement or checkout-friction review where appropriate.")
+
+    st.markdown("### Batch prediction from CSV")
+    upload = st.file_uploader("Upload customer rows as CSV", type="csv")
+    st.caption("Required columns: " + ", ".join(f"`{column}`" for column in required_input_columns))
+    if upload is not None:
+        uploaded_rows = pd.read_csv(upload)
+        missing_columns = [column for column in required_input_columns if column not in uploaded_rows.columns]
+        if missing_columns:
+            st.error("The uploaded CSV is missing: " + ", ".join(missing_columns))
+        else:
+            scored_rows = uploaded_rows.copy()
+            probabilities = best_model.predict_proba(uploaded_rows[required_input_columns])[:, 1]
+            scored_rows["predicted_purchase_probability"] = probabilities
+            scored_rows["tuned_threshold_prediction"] = (probabilities >= best_model.threshold).astype(int)
+            st.success(f"Scored {len(scored_rows):,} uploaded row(s) with the saved model.")
+            st.dataframe(scored_rows, hide_index=True, width="stretch", height=360)
+            st.download_button(
+                "Download scored CSV",
+                data=scored_rows.to_csv(index=False).encode("utf-8"),
+                file_name="retailiq_scored_predictions.csv",
+                mime="text/csv",
+            )
+
+if view == "SHAP viewer":
     section("SHAP explanation viewer", "Move from global model behaviour to three real local test-row explanations.")
     global_cols = st.columns(2, gap="large")
     with global_cols[0]:
@@ -346,7 +482,7 @@ with tabs[3]:
             )
         st.dataframe(pd.DataFrame(contribution_rows).style.format({"SHAP value": "{:.4f}"}), hide_index=True, width="stretch")
 
-with tabs[4]:
+if view == "Business insights":
     section("Business insights", "Transparent Phase 5 rules layered over saved probabilities and per-row SHAP drivers.")
     action_counts = business_insights["recommended_action"].value_counts().rename_axis("Action").reset_index(name="Rows")
     promotion_mask = business_insights["recommended_action"].str.contains("promotion", case=False, na=False)
@@ -377,7 +513,7 @@ with tabs[4]:
     st.caption(f"Showing {len(filtered):,} of {len(business_insights):,} rows")
     st.dataframe(filtered, hide_index=True, width="stretch", height=430)
 
-with tabs[5]:
+if view == "Adaptive experiment":
     section("Adaptive before/after comparison", "An offline chronological-batch experiment with an explicit F1-drop retraining rule.")
     adaptive_metrics = st.columns(4)
     adaptive_metrics[0].metric("Batch evaluation F1", f"{later_state['f1']:.4f}")
