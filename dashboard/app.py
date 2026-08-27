@@ -35,71 +35,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.markdown(
-    """
-    <style>
-    :root {
-        --ink: #10243e;
-        --muted: #607087;
-        --navy: #122a4a;
-        --cyan: #19a8a5;
-        --mint: #93dfc8;
-        --amber: #f4ad55;
-        --canvas: #f5f8fc;
-    }
-    .stApp { background: linear-gradient(180deg, #f8fbff 0%, var(--canvas) 52%, #f8fbff 100%); }
-    [data-testid="stSidebar"] { background: linear-gradient(180deg, #10243e 0%, #18395e 100%); }
-    [data-testid="stSidebar"] * { color: #f4f8ff; }
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: #d8e5f3; }
-    .block-container { max-width: 1500px; padding-top: 1.4rem; padding-bottom: 2.5rem; }
-    .hero {
-        position: relative; overflow: hidden; border-radius: 24px; padding: 2.2rem 2.5rem;
-        color: white; margin-bottom: 1.15rem;
-        background: radial-gradient(circle at 90% 10%, rgba(147,223,200,.45), transparent 28%),
-                    linear-gradient(120deg, #10243e 0%, #17476b 58%, #138b8b 100%);
-        box-shadow: 0 18px 50px rgba(19, 52, 84, .18);
-    }
-    .hero h1 { margin: .35rem 0 .4rem; font-size: clamp(2.2rem, 5vw, 4.15rem); line-height: .98; letter-spacing: -.045em; }
-    .hero p { margin: 0; max-width: 760px; color: #e6f3f6; font-size: 1.05rem; }
-    .eyebrow { text-transform: uppercase; letter-spacing: .18em; font-weight: 750; font-size: .73rem; color: #a7f0db; }
-    .status-strip { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1.3rem; }
-    .status-chip { border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.10); border-radius: 999px; padding: .38rem .78rem; font-size: .78rem; }
-    .section-title { margin: 1.3rem 0 .2rem; color: var(--ink); font-size: 1.55rem; font-weight: 780; letter-spacing: -.02em; }
-    .section-copy { color: var(--muted); margin-bottom: 1rem; }
-    div[data-testid="stMetric"] { background: rgba(255,255,255,.92); border: 1px solid #dfe9f3; padding: 1rem 1.1rem; border-radius: 16px; box-shadow: 0 7px 24px rgba(19,52,84,.06); }
-    div[data-testid="stMetricLabel"] { color: #63758b; }
-    div[data-testid="stMetricValue"] { color: var(--ink); }
-    /* Keep every tab readable on the light dashboard background. */
-    div[data-testid="stTabs"] [data-baseweb="tab-list"] {
-        gap: .35rem;
-        border-bottom: 1px solid #d7e2ed;
-        overflow-x: auto;
-        scrollbar-width: thin;
-    }
-    div[data-testid="stTabs"] button[role="tab"] {
-        color: #31516b !important;
-        font-weight: 750;
-        white-space: nowrap;
-        padding: .65rem .85rem;
-        border-radius: 9px 9px 0 0;
-    }
-    div[data-testid="stTabs"] button[role="tab"] p {
-        color: inherit !important;
-    }
-    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
-        color: #0f766e !important;
-        background: #e7f7f4;
-    }
-    div[data-testid="stDataFrame"] { border: 1px solid #dfe8f1; border-radius: 14px; overflow: hidden; }
-    .note-card { background: white; border: 1px solid #dfe9f3; border-left: 5px solid var(--cyan); border-radius: 14px; padding: 1rem 1.1rem; color: var(--ink); }
-    .warning-card { background: #fff8ee; border: 1px solid #f6d7ad; border-left: 5px solid var(--amber); border-radius: 14px; padding: 1rem 1.1rem; color: #69441c; }
-    .footer { text-align: center; color: #7d8a9d; padding-top: 2rem; font-size: .82rem; }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-
 @st.cache_data(show_spinner=False)
 def load_csv(path: Path) -> pd.DataFrame:
     """Load one already-generated result table."""
@@ -168,9 +103,9 @@ def image_panel(path: Path, caption: str) -> None:
 
 
 def section(title: str, copy: str) -> None:
-    """Render a compact section heading."""
-    st.markdown(f'<div class="section-title">{title}</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="section-copy">{copy}</div>', unsafe_allow_html=True)
+    """Render a theme-native section heading."""
+    st.subheader(title)
+    st.caption(copy)
 
 
 required_files = [
@@ -251,21 +186,11 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Refresh the browser after running `python main.py` to load regenerated outputs.")
 
-st.markdown(
-    """
-    <div class="hero">
-      <div class="eyebrow">Explainable retail analytics</div>
-      <h1>RetailIQ</h1>
-      <p>A clear view of customer behaviour, purchase predictions, model explanations, retail actions, and the offline adaptive experiment—all from reproducible saved results.</p>
-      <div class="status-strip">
-        <span class="status-chip">◆ Saved outputs only</span>
-        <span class="status-chip">◆ Threshold-aware predictions</span>
-        <span class="status-chip">◆ SHAP explanations</span>
-        <span class="status-chip">◆ No retraining</span>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
+st.title("RetailIQ")
+st.caption("Explainable retail analytics")
+st.write(
+    "Explore customer behaviour, purchase predictions, model explanations, retail actions, "
+    "and the offline adaptive experiment. Use the sidebar to change sections."
 )
 
 st.caption(f"Viewing: **{view}** · Select another section from the left-side navigation.")
@@ -283,11 +208,9 @@ if view == "Overview":
         image_panel(FIGURES_DIR / "target_class_distribution.png", "Observed target class distribution")
     with right:
         st.markdown("### What this dashboard represents")
-        st.markdown(
-            '<div class="note-card"><b>End-to-end evidence with optional live scoring.</b><br><br>'
+        st.info(
             "The saved analysis comes from the six project phases. The Live prediction page uses the already-fitted "
-            "best-model artifact to score new rows, but it never retrains the model or stores uploaded data.</div>",
-            unsafe_allow_html=True,
+            "best-model artifact to score new rows, but it never retrains the model or stores uploaded data."
         )
         st.markdown("#### Pipeline coverage")
         st.markdown(
@@ -364,10 +287,10 @@ if view == "Live prediction":
         "Live purchase prediction",
         "Enter one customer profile or upload a CSV. The saved best model scores the data using its fitted preprocessing; no retraining occurs.",
     )
-    st.markdown(
-        '<div class="note-card"><b>How to use this page:</b> complete the form for one customer, or upload a CSV containing the required input columns. '
-        "The dashboard returns a purchase probability and the tuned threshold-based prediction. Uploaded files are used only in the current browser session.</div>",
-        unsafe_allow_html=True,
+    st.info(
+        "Complete the form for one customer, or upload a CSV containing the required input columns. "
+        "The dashboard returns a purchase probability and the tuned threshold-based prediction. "
+        "Uploaded files are used only in the current browser session."
     )
 
     required_input_columns = list(prediction_schema)
@@ -500,7 +423,7 @@ if view == "Business insights":
         caveat_match = re.search(r"At the tuned threshold, held-out precision[^\n]+", business_summary)
         caveat = caveat_match.group(0) if caveat_match else "See the saved Phase 5 summary for the precision caveat."
         st.markdown("#### Responsible use")
-        st.markdown(f'<div class="warning-card"><b>Precision caveat</b><br><br>{caveat}</div>', unsafe_allow_html=True)
+        st.warning(f"Precision caveat: {caveat}")
 
     st.markdown("### Explore row-level actions")
     actions = sorted(business_insights["recommended_action"].dropna().unique().tolist())
@@ -523,18 +446,13 @@ if view == "Adaptive experiment":
 
     mode_match = re.search(r"Batch mode:\s*([^\n]+)", adaptive_summary)
     mode = mode_match.group(1).strip() if mode_match else "See saved summary"
-    st.markdown(
-        f'<div class="note-card"><b>Observed mode:</b> {mode}<br><br>'
-        "This saved run used the confirmed visit-date field and a chronological split. The random STAND-IN "
-        "fallback was not used. This remains an offline experiment, not production drift monitoring.</div>",
-        unsafe_allow_html=True,
+    st.info(
+        f"Observed mode: {mode}. This saved run used the confirmed visit-date field and a chronological split. "
+        "The random STAND-IN fallback was not used. This remains an offline experiment, not production drift monitoring."
     )
     image_panel(FIGURES_DIR / "adaptive_before_after.png", "Observed adaptive decision comparison")
     st.dataframe(adaptive_table.style.format(precision=4), hide_index=True, width="stretch")
     with st.expander("Open the complete adaptive experiment summary"):
         st.code(adaptive_summary, language=None)
 
-st.markdown(
-    '<div class="footer">RetailIQ · Read-only dashboard over reproducible Phase 1–6 artifacts</div>',
-    unsafe_allow_html=True,
-)
+st.caption("RetailIQ · Dashboard over reproducible Phase 1–6 artifacts")
