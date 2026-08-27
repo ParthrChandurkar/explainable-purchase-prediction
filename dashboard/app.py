@@ -61,7 +61,27 @@ st.markdown(
     div[data-testid="stMetric"] { background: rgba(255,255,255,.92); border: 1px solid #dfe9f3; padding: 1rem 1.1rem; border-radius: 16px; box-shadow: 0 7px 24px rgba(19,52,84,.06); }
     div[data-testid="stMetricLabel"] { color: #63758b; }
     div[data-testid="stMetricValue"] { color: var(--ink); }
-    div[data-testid="stTabs"] button { font-weight: 700; }
+    /* Keep every tab readable on the light dashboard background. */
+    div[data-testid="stTabs"] [data-baseweb="tab-list"] {
+        gap: .35rem;
+        border-bottom: 1px solid #d7e2ed;
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+    div[data-testid="stTabs"] button[role="tab"] {
+        color: #31516b !important;
+        font-weight: 750;
+        white-space: nowrap;
+        padding: .65rem .85rem;
+        border-radius: 9px 9px 0 0;
+    }
+    div[data-testid="stTabs"] button[role="tab"] p {
+        color: inherit !important;
+    }
+    div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
+        color: #0f766e !important;
+        background: #e7f7f4;
+    }
     div[data-testid="stDataFrame"] { border: 1px solid #dfe8f1; border-radius: 14px; overflow: hidden; }
     .note-card { background: white; border: 1px solid #dfe9f3; border-left: 5px solid var(--cyan); border-radius: 14px; padding: 1rem 1.1rem; color: var(--ink); }
     .warning-card { background: #fff8ee; border: 1px solid #f6d7ad; border-left: 5px solid var(--amber); border-radius: 14px; padding: 1rem 1.1rem; color: #69441c; }
