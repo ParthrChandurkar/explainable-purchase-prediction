@@ -1,4 +1,4 @@
-"""Reusable live scoring helpers for the Streamlit RetailIQ prototype.
+"""Reusable live scoring helpers for the Streamlit PurchaseLens prototype.
 
 The functions in this module load no training data and never fit a model. They
 only use the saved fitted pipeline to score new customer rows consistently with

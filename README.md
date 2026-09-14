@@ -1,8 +1,8 @@
-# 🛒 RetailIQ: Explainable Purchase Prediction
+# 🛒 PurchaseLens: Explainable Purchase Prediction
 
 > A reproducible, end-to-end machine-learning project for predicting e-commerce purchases, explaining model decisions, and converting them into transparent retail-action suggestions.
 
-RetailIQ uses the Kaggle **Indian E-Commerce Customer Behavior & Purchase** dataset to build an understandable purchase-prediction workflow. It inspects the real CSV, prevents target leakage, prepares a controlled feature set, compares class-balanced models, tunes their probability thresholds, produces global and local SHAP explanations, maps predictions to simple retail actions, and performs an offline adaptive-evaluation experiment.
+PurchaseLens uses the Kaggle **Indian E-Commerce Customer Behavior & Purchase** dataset to build an understandable purchase-prediction workflow. It inspects the real CSV, prevents target leakage, prepares a controlled feature set, compares class-balanced models, tunes their probability thresholds, produces global and local SHAP explanations, maps predictions to simple retail actions, and performs an offline adaptive-evaluation experiment.
 
 All dataset findings, feature names, thresholds, metrics, predictions, explanations, and business summaries are calculated from the supplied CSV when the pipeline runs. Nothing is fabricated or hardcoded as an experimental result.
 
@@ -289,4 +289,4 @@ Exact reproducible package versions are listed in [`requirements.txt`](requireme
 
 ## 📌 Project scope
 
-RetailIQ is a small, reproducible undergraduate software project. It demonstrates a complete offline machine-learning workflow and does not represent a production recommendation engine, real-time drift-monitoring platform, or guaranteed purchasing system. Promotion-related outputs are intentionally described as **candidate actions** because prediction errors and false positives remain possible.
+PurchaseLens is a small, reproducible undergraduate software project. It demonstrates a complete offline machine-learning workflow and does not represent a production recommendation engine, real-time drift-monitoring platform, or guaranteed purchasing system. Promotion-related outputs are intentionally described as **candidate actions** because prediction errors and false positives remain possible.

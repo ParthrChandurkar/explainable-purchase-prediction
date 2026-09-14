@@ -1,4 +1,4 @@
-"""RetailIQ dashboard for saved artifacts and new customer scoring.
+"""PurchaseLens dashboard for saved artifacts and new customer scoring.
 
 The dashboard never retrains a model. It can load the saved best-model artifact
 to score user-entered rows or an uploaded CSV using the fitted preprocessing.
@@ -32,7 +32,7 @@ MODEL_PATH = PROJECT_ROOT / "models" / "best_model.joblib"
 
 
 st.set_page_config(
-    page_title="RetailIQ | Purchase Intelligence",
+    page_title="PurchaseLens | Purchase Intelligence",
     page_icon="◆",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -126,7 +126,7 @@ best_tuned = threshold_tuning.sort_values(["tuned_f1", "roc_auc"], ascending=Fal
 later_state = adaptive_table.iloc[0]
 
 with st.sidebar:
-    st.markdown("## ◆ RetailIQ")
+    st.markdown("## ◆ PurchaseLens")
     st.caption("Explainable purchase intelligence")
     st.markdown("---")
     st.markdown("**Dashboard mode**")
@@ -155,7 +155,7 @@ with st.sidebar:
     st.markdown("---")
     st.caption("Refresh the browser after running `python main.py` to load regenerated outputs.")
 
-st.title("RetailIQ")
+st.title("PurchaseLens")
 st.caption("Explainable retail analytics")
 st.write(
     "Explore customer behaviour, purchase predictions, model explanations, retail actions, "
@@ -270,7 +270,7 @@ if view == "Live prediction":
     st.download_button(
         "Download CSV input template",
         data=pd.DataFrame([template_row]).to_csv(index=False).encode("utf-8"),
-        file_name="retailiq_input_template.csv",
+        file_name="purchaselens_input_template.csv",
         mime="text/csv",
         help="Fill this template with one or more customer rows, then upload it below.",
     )
@@ -352,7 +352,7 @@ if view == "Live prediction":
             st.download_button(
                 "Download scored CSV",
                 data=scored_rows.to_csv(index=False).encode("utf-8"),
-                file_name="retailiq_scored_predictions.csv",
+                file_name="purchaselens_scored_predictions.csv",
                 mime="text/csv",
             )
 
@@ -451,4 +451,4 @@ if view == "Adaptive experiment":
     with st.expander("Open the complete adaptive experiment summary"):
         st.code(adaptive_summary, language=None)
 
-st.caption("RetailIQ · Dashboard over reproducible Phase 1–6 artifacts")
+st.caption("PurchaseLens · Dashboard over reproducible Phase 1–6 artifacts")
