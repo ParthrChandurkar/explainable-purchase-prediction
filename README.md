@@ -178,6 +178,15 @@ The dashboard uses a clear left-side navigation menu with these sections:
 
 The dashboard reads saved summaries, tables, predictions, and figures. The **Live Prediction** page additionally loads `models/best_model.joblib` to score new customer rows using the fitted preprocessing and tuned threshold. It does not retrain the model, call external services, store uploaded data, or modify pipeline outputs.
 
+### Live prediction workflow
+
+1. Select **Live prediction** in the sidebar.
+2. Either enter one customer's session and behaviour values in the form, or select **Download CSV input template**.
+3. For batch scoring, fill the template with one or more rows and upload it back to the dashboard.
+4. Review the calculated purchase probability, tuned-threshold decision, and transparent action hint; optionally download the scored CSV.
+
+The form choices are read directly from the fitted preprocessing pipeline, so category codes and session-duration values match the model's expected inputs. The action hint is a simple inspectable rule based on the new row's probability and engagement values; it is not presented as a new SHAP explanation or a guaranteed business outcome.
+
 ## 📊 Understanding the generated results
 
 ### Summary reports
