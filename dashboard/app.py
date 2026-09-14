@@ -21,6 +21,9 @@ if str(PROJECT_ROOT) not in sys.path:
     # Streamlit starts this file from dashboard/, while the saved model refers
     # to the project-level src package when it is unpickled.
     sys.path.insert(0, str(PROJECT_ROOT))
+
+from src.live_predict import build_input_schema, required_input_columns, score_live_rows
+
 RESULTS_DIR = PROJECT_ROOT / "results"
 FIGURES_DIR = RESULTS_DIR / "figures"
 TABLES_DIR = RESULTS_DIR / "tables"
@@ -51,40 +54,6 @@ def load_text(path: Path) -> str:
 def load_best_model():
     """Load the already-fitted threshold-aware model without retraining."""
     return joblib.load(MODEL_PATH)
-
-
-def live_prediction_schema(model) -> dict[str, dict[str, object]]:
-    """Read required user inputs from the fitted preprocessing pipeline."""
-    preprocessor = model.estimator.named_steps["preprocessor"]
-    schema: dict[str, dict[str, object]] = {}
-    for name, transformer, columns in preprocessor.transformers_:
-        if name == "remainder" or not isinstance(columns, list):
-            continue
-        if name == "numeric":
-            medians = transformer.named_steps["imputer"].statistics_
-            for column, median in zip(columns, medians):
-                schema[column] = {"kind": "numeric", "default": float(median)}
-        elif name == "nominal":
-            categories = transformer.named_steps["one_hot"].categories_
-            for column, choices in zip(columns, categories):
-                schema[column] = {
-                    "kind": "choice",
-                    "choices": [str(value) for value in choices],
-                    "default": str(choices[0]),
-                }
-        elif name == "frequency":
-            defaults = transformer.named_steps["imputer"].statistics_
-            for column, default in zip(columns, defaults):
-                schema[column] = {"kind": "text", "default": str(default)}
-        elif name == "ordinal":
-            categories = transformer.named_steps["ordinal"].categories_
-            for column, choices in zip(columns, categories):
-                schema[column] = {
-                    "kind": "choice",
-                    "choices": [str(value) for value in choices],
-                    "default": str(choices[0]),
-                }
-    return schema
 
 
 def require_files(paths: list[Path]) -> None:
@@ -130,7 +99,7 @@ required_files = [
 require_files(required_files)
 
 best_model = load_best_model()
-prediction_schema = live_prediction_schema(best_model)
+prediction_schema = build_input_schema(best_model)
 
 dataset_summary = load_text(RESULTS_DIR / "dataset_summary.txt")
 eda_summary = load_text(RESULTS_DIR / "eda_preprocessing_summary.txt")
@@ -293,7 +262,19 @@ if view == "Live prediction":
         "Uploaded files are used only in the current browser session."
     )
 
-    required_input_columns = list(prediction_schema)
+    input_columns = required_input_columns(prediction_schema)
+    template_row = {
+        column: details["default"]
+        for column, details in prediction_schema.items()
+    }
+    st.download_button(
+        "Download CSV input template",
+        data=pd.DataFrame([template_row]).to_csv(index=False).encode("utf-8"),
+        file_name="retailiq_input_template.csv",
+        mime="text/csv",
+        help="Fill this template with one or more customer rows, then upload it below.",
+    )
+
     with st.form("single_customer_prediction"):
         st.markdown("### Enter customer behaviour and session details")
         form_columns = st.columns(2, gap="large")
@@ -314,7 +295,15 @@ if view == "Live prediction":
                     customer_values[column] = st.selectbox(
                         label,
                         choices,
-                        index=choices.index(str(details["default"])),
+                        index=choices.index(details["default"]),
+                        key=f"live_{column}",
+                    )
+                elif details["kind"] == "frequency" and bool(details["numeric"]):
+                    customer_values[column] = st.number_input(
+                        label,
+                        value=float(details["default"]),
+                        step=1.0,
+                        format="%.0f",
                         key=f"live_{column}",
                     )
                 else:
@@ -326,13 +315,21 @@ if view == "Live prediction":
         single_submitted = st.form_submit_button("Predict purchase likelihood", type="primary")
 
     if single_submitted:
-        new_customer = pd.DataFrame([customer_values], columns=required_input_columns)
-        probability = float(best_model.predict_proba(new_customer)[0, 1])
-        prediction = int(probability >= best_model.threshold)
+        scored_customer, notes = score_live_rows(
+            best_model,
+            pd.DataFrame([customer_values], columns=input_columns),
+            prediction_schema,
+        )
+        result = scored_customer.iloc[0]
+        probability = float(result["predicted_purchase_probability"])
+        prediction = int(result["tuned_threshold_prediction"])
         metric_columns = st.columns(3)
         metric_columns[0].metric("Purchase probability", f"{probability:.2%}")
         metric_columns[1].metric("Tuned threshold", f"{best_model.threshold:.4f}")
         metric_columns[2].metric("Prediction", "Likely to purchase" if prediction else "Less likely to purchase")
+        st.write("**Recommended action hint:** " + str(result["recommended_action_hint"]))
+        for note in notes:
+            st.warning(note)
         if prediction:
             st.success("This profile is above the tuned threshold. Treat it as a candidate for a retail action, not a purchase guarantee.")
         else:
@@ -340,18 +337,17 @@ if view == "Live prediction":
 
     st.markdown("### Batch prediction from CSV")
     upload = st.file_uploader("Upload customer rows as CSV", type="csv")
-    st.caption("Required columns: " + ", ".join(f"`{column}`" for column in required_input_columns))
+    st.caption("Required columns: " + ", ".join(f"`{column}`" for column in input_columns))
     if upload is not None:
         uploaded_rows = pd.read_csv(upload)
-        missing_columns = [column for column in required_input_columns if column not in uploaded_rows.columns]
-        if missing_columns:
-            st.error("The uploaded CSV is missing: " + ", ".join(missing_columns))
+        try:
+            scored_rows, notes = score_live_rows(best_model, uploaded_rows, prediction_schema)
+        except ValueError as error:
+            st.error(str(error))
         else:
-            scored_rows = uploaded_rows.copy()
-            probabilities = best_model.predict_proba(uploaded_rows[required_input_columns])[:, 1]
-            scored_rows["predicted_purchase_probability"] = probabilities
-            scored_rows["tuned_threshold_prediction"] = (probabilities >= best_model.threshold).astype(int)
             st.success(f"Scored {len(scored_rows):,} uploaded row(s) with the saved model.")
+            for note in notes:
+                st.warning(note)
             st.dataframe(scored_rows, hide_index=True, width="stretch", height=360)
             st.download_button(
                 "Download scored CSV",
