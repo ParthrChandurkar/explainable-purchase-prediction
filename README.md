@@ -204,6 +204,15 @@ The dashboard reads saved summaries, tables, predictions, and figures. The **Liv
 
 The form choices are read directly from the fitted preprocessing pipeline, so category codes and session-duration values match the model's expected inputs. The action hint is a simple inspectable rule based on the new row's probability and engagement values; it is not presented as a new SHAP explanation or a guaranteed business outcome.
 
+### 🎓 Five-minute faculty demonstration path
+
+1. Start with **Dataset Overview** and state that `purchased` was selected from the real CSV while post-outcome fields were excluded as leakage.
+2. Open **Customer Analytics** to show the target imbalance and one real behaviour-versus-target chart.
+3. Use **Purchase Prediction Results** to explain why tuned F1-score and ROC-AUC matter more than accuracy alone for this dataset.
+4. Open **SHAP Viewer** and connect one global driver plus one local example to an understandable model reason.
+5. In **Live Prediction**, enter a profile or upload the generated CSV template, then show the probability, tuned decision, and cautious action hint.
+6. Finish with **Adaptive Experiment**: it is an offline chronological `visit_date` evaluation, not a claim of live production drift monitoring.
+
 ## 📊 Understanding the generated results
 
 ### Summary reports
