@@ -50,6 +50,12 @@ flowchart LR
     J --> K
 ```
 
+## 🏗️ Web-app architecture
+
+PurchaseLens has two deliberately separate parts: an offline pipeline that creates reproducible model artifacts, and a local Streamlit web application that loads those artifacts for exploration and live scoring. This separation ensures that a dashboard submission never silently changes the trained model.
+
+![PurchaseLens web-application architecture](results/figures/purchaselens_system_architecture.png)
+
 ## 📁 Project structure
 
 ```text
