@@ -6,6 +6,17 @@ PurchaseLens uses the Kaggle **Indian E-Commerce Customer Behavior & Purchase** 
 
 All dataset findings, feature names, thresholds, metrics, predictions, explanations, and business summaries are calculated from the supplied CSV when the pipeline runs. Nothing is fabricated or hardcoded as an experimental result.
 
+## ⚡ Run the interactive web app
+
+After installing dependencies and generating the saved artifacts once, start the local PurchaseLens prototype with:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+streamlit run dashboard/app.py
+```
+
+The browser opens a Streamlit application where a retail user can explore saved results or submit a new customer profile through the **Live Prediction** form or a CSV upload. The application loads the existing fitted pipeline; it does **not** retrain a model when a user submits data.
+
 ## ✨ What the project includes
 
 - 🔍 **Automatic data inspection** — shape, columns, data types, missing values, duplicates, samples, target candidates, and leakage checks.
