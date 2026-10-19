@@ -12,7 +12,9 @@ import sys
 from pathlib import Path
 
 import joblib
+import numpy as np
 import pandas as pd
+import shap
 import streamlit as st
 
 
@@ -22,7 +24,15 @@ if str(PROJECT_ROOT) not in sys.path:
     # to the project-level src package when it is unpickled.
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.live_predict import build_input_schema, required_input_columns, score_live_rows
+from src.data_prep import RANDOM_SEED
+from src.live_predict import (
+    build_input_schema,
+    explain_live_row,
+    prepare_live_inputs,
+    required_input_columns,
+    score_live_rows,
+)
+from src.models import prepare_training_data
 
 RESULTS_DIR = PROJECT_ROOT / "results"
 FIGURES_DIR = RESULTS_DIR / "figures"
@@ -71,10 +81,31 @@ def image_panel(path: Path, caption: str) -> None:
     st.image(str(path), caption=caption, width="stretch")
 
 
+def chart_interpretation(copy: str) -> None:
+    """Keep every visual accompanied by a short faculty-demo interpretation."""
+    st.caption("**What to notice:** " + copy)
+
+
 def section(title: str, copy: str) -> None:
     """Render a theme-native section heading."""
     st.subheader(title)
     st.caption(copy)
+
+
+@st.cache_resource(show_spinner="Preparing the saved SHAP explanation context...")
+def load_live_shap_explainer(_model):
+    """Build a fixed-background explainer for new rows without refitting a model."""
+    classifier = _model.estimator.named_steps["classifier"]
+    if classifier.__class__.__name__ != "LogisticRegression":
+        raise TypeError("Live SHAP explanations are configured for the selected Logistic Regression model.")
+    split = prepare_training_data(
+        PROJECT_ROOT / "data",
+        RESULTS_DIR / "dataset_summary.txt",
+    )
+    transformed_train = _model.estimator.named_steps["preprocessor"].transform(split["X_train"])
+    background_size = min(200, transformed_train.shape[0])
+    background = shap.sample(transformed_train, background_size, random_state=RANDOM_SEED)
+    return shap.LinearExplainer(classifier, background)
 
 
 required_files = [
@@ -175,27 +206,33 @@ if view == "Overview":
     left, right = st.columns([1.08, 0.92], gap="large")
     with left:
         image_panel(FIGURES_DIR / "target_class_distribution.png", "Observed target class distribution")
+        chart_interpretation(
+            "The purchase target is imbalanced, so F1-score and ROC-AUC were prioritised over accuracy when comparing models."
+        )
     with right:
-        st.markdown("### What this dashboard represents")
+        st.markdown("### About PurchaseLens")
         st.info(
-            "The saved analysis comes from the six project phases. The Live prediction page uses the already-fitted "
-            "best-model artifact to score new rows, but it never retrains the model or stores uploaded data."
+            "PurchaseLens is an explainable e-commerce decision-support prototype. It estimates purchase likelihood "
+            "from pre-purchase session behaviour, explains the prediction, and maps the result to a cautious retail action."
         )
-        st.markdown("#### Pipeline coverage")
+        st.markdown("#### What the prototype does")
         st.markdown(
-            "- Data quality and leakage decisions\n"
-            "- Customer-behaviour exploration\n"
-            "- Threshold-corrected model evaluation\n"
-            "- Global and local SHAP explanations\n"
-            "- Transparent retail-action rules\n"
-            "- Offline adaptive-model experiment"
+            "- Uses a leakage-aware, pre-purchase feature pipeline\n"
+            "- Scores new customer profiles with the saved selected model\n"
+            "- Shows global and individual SHAP explanations\n"
+            "- Suggests transparent, rule-based retail follow-up\n"
+            "- Includes an offline chronological adaptive evaluation"
         )
+        st.caption("New entries are processed in the current browser session only. The model is never retrained from dashboard inputs.")
     with st.expander("Open the complete Phase 1 dataset summary"):
         st.code(dataset_summary, language=None)
 
 if view == "Customer analytics":
     section("Customer analytics & EDA", "Saved Phase 2 views of behaviour, class balance, association, encoding, and outliers.")
     image_panel(FIGURES_DIR / "correlation_heatmap.png", "Numeric association heatmap")
+    chart_interpretation(
+        "This heatmap is an exploratory view of numeric relationships. It supports feature understanding but does not establish causation."
+    )
 
     st.markdown("### Behaviour versus purchase outcome")
     behaviour_paths = sorted(FIGURES_DIR.glob("behaviour_*_vs_target.png"))
@@ -205,6 +242,7 @@ if view == "Customer analytics":
             with column:
                 label = path.stem.removeprefix("behaviour_").removesuffix("_vs_target").replace("_", " ").title()
                 image_panel(path, label)
+                chart_interpretation("Compare the purchase rate across the observed behavioural groups before interpreting the model output.")
 
     with st.expander("Cleaning and feature decisions", expanded=False):
         decision_tabs = st.tabs(["Missing values", "Encoding", "Outliers"])
@@ -245,6 +283,7 @@ if view == "Prediction results":
         ]:
             with column:
                 image_panel(FIGURES_DIR / f"confusion_matrix_{model_slug}_tuned.png", f"{title} · tuned threshold")
+                chart_interpretation("Diagonal cells are correct decisions; off-diagonal cells show false positives and false negatives at the selected cutoff.")
 
     st.markdown("### Sample predictions with explanations attached")
     st.dataframe(sample_predictions, hide_index=True, width="stretch", height=250)
@@ -253,13 +292,12 @@ if view == "Prediction results":
 
 if view == "Live prediction":
     section(
-        "Live purchase prediction",
-        "Enter one customer profile or upload a CSV. The saved best model scores the data using its fitted preprocessing; no retraining occurs.",
+        "Live purchase prediction & decision support",
+        "Enter one customer profile or upload a CSV. The saved selected model returns a probability, threshold-based decision, actual local SHAP drivers, and a transparent retail-action suggestion.",
     )
     st.info(
-        "Complete the form for one customer, or upload a CSV containing the required input columns. "
-        "The dashboard returns a purchase probability and the tuned threshold-based prediction. "
-        "Uploaded files are used only in the current browser session."
+        "This is live scoring, not retraining. New values are processed with the fitted preprocessing pipeline; "
+        "entered and uploaded data remain in the current browser session."
     )
 
     input_columns = required_input_columns(prediction_schema)
@@ -276,64 +314,103 @@ if view == "Live prediction":
     )
 
     with st.form("single_customer_prediction"):
-        st.markdown("### Enter customer behaviour and session details")
-        form_columns = st.columns(2, gap="large")
+        st.markdown("### Customer profile and pre-purchase session details")
+        st.caption("All fields reflect columns retained by the saved preprocessing pipeline. Encoded category values are intentionally shown as dataset codes.")
         customer_values: dict[str, object] = {}
-        for index, (column, details) in enumerate(prediction_schema.items()):
-            field = form_columns[index % 2]
-            label = column.replace("_", " ").title()
-            with field:
-                if details["kind"] == "numeric":
-                    customer_values[column] = st.number_input(
-                        label,
-                        value=float(details["default"]),
-                        format="%.4f",
-                        key=f"live_{column}",
-                    )
-                elif details["kind"] == "choice":
-                    choices = list(details["choices"])
-                    customer_values[column] = st.selectbox(
-                        label,
-                        choices,
-                        index=choices.index(details["default"]),
-                        key=f"live_{column}",
-                    )
-                elif details["kind"] == "frequency" and bool(details["numeric"]):
-                    customer_values[column] = st.number_input(
-                        label,
-                        value=float(details["default"]),
-                        step=1.0,
-                        format="%.0f",
-                        key=f"live_{column}",
-                    )
-                else:
-                    customer_values[column] = st.text_input(
-                        label,
-                        value=str(details["default"]),
-                        key=f"live_{column}",
-                    )
-        single_submitted = st.form_submit_button("Predict purchase likelihood", type="primary")
+        field_groups = [
+            ("Shopping and engagement", ["unit_price", "quantity", "discount_percent", "discount_amount", "pages_viewed", "time_on_site_sec", "added_to_cart"]),
+            ("Visit context", ["visit_day", "visit_month", "visit_weekday", "visit_season", "session_duration_bucket"]),
+            ("Customer and channel codes", ["device_type", "user_type", "marketing_channel", "product_category", "location"]),
+        ]
+        for group_name, group_columns in field_groups:
+            st.markdown(f"#### {group_name}")
+            form_columns = st.columns(3, gap="medium")
+            for index, column in enumerate(group_columns):
+                if column not in prediction_schema:
+                    continue
+                details = prediction_schema[column]
+                label = column.replace("_", " ").title()
+                with form_columns[index % 3]:
+                    if details["kind"] == "numeric":
+                        customer_values[column] = st.number_input(
+                            label,
+                            min_value=0.0,
+                            value=float(details["default"]),
+                            format="%.2f",
+                            key=f"live_{column}",
+                        )
+                    elif details["kind"] == "choice":
+                        choices = list(details["choices"])
+                        customer_values[column] = st.selectbox(
+                            label,
+                            choices,
+                            index=choices.index(details["default"]),
+                            key=f"live_{column}",
+                        )
+                    elif details["kind"] == "frequency" and bool(details["numeric"]):
+                        customer_values[column] = st.number_input(
+                            label,
+                            min_value=0.0,
+                            value=float(details["default"]),
+                            step=1.0,
+                            format="%.0f",
+                            key=f"live_{column}",
+                        )
+                    else:
+                        customer_values[column] = st.text_input(
+                            label,
+                            value=str(details["default"]),
+                            key=f"live_{column}",
+                        )
+        single_submitted = st.form_submit_button("Generate purchase decision and explanation", type="primary", use_container_width=True)
 
     if single_submitted:
-        scored_customer, notes = score_live_rows(
-            best_model,
-            pd.DataFrame([customer_values], columns=input_columns),
-            prediction_schema,
-        )
-        result = scored_customer.iloc[0]
+        entered_row = pd.DataFrame([customer_values], columns=input_columns)
+        scored_customer, notes = score_live_rows(best_model, entered_row, prediction_schema)
+        prepared_row, preparation_notes = prepare_live_inputs(entered_row, prediction_schema)
+        live_explainer = load_live_shap_explainer(best_model)
+        contributions = explain_live_row(best_model, prepared_row, live_explainer)
+        st.session_state["live_prediction_result"] = {
+            "scored": scored_customer,
+            "notes": [*notes, *preparation_notes],
+            "contributions": contributions,
+        }
+
+    if "live_prediction_result" in st.session_state:
+        live_result = st.session_state["live_prediction_result"]
+        result = live_result["scored"].iloc[0]
         probability = float(result["predicted_purchase_probability"])
         prediction = int(result["tuned_threshold_prediction"])
-        metric_columns = st.columns(3)
+        action = str(result["recommended_action_hint"])
+        metric_columns = st.columns(4)
         metric_columns[0].metric("Purchase probability", f"{probability:.2%}")
-        metric_columns[1].metric("Tuned threshold", f"{best_model.threshold:.4f}")
-        metric_columns[2].metric("Prediction", "Likely to purchase" if prediction else "Less likely to purchase")
-        st.write("**Recommended action hint:** " + str(result["recommended_action_hint"]))
-        for note in notes:
-            st.warning(note)
+        metric_columns[1].metric("Decision", "Likely to purchase" if prediction else "Less likely to purchase")
+        metric_columns[2].metric("Threshold position", "Above selected cutoff" if prediction else "Below selected cutoff")
+        metric_columns[3].metric("Recommended action", action.replace("Candidate for promotion - ", "Promotion candidate"))
+
         if prediction:
-            st.success("This profile is above the tuned threshold. Treat it as a candidate for a retail action, not a purchase guarantee.")
+            st.success("Action guidance: this is a candidate for follow-up, not a guarantee of purchase. Moderate precision means some flagged customers will not purchase.")
         else:
-            st.info("This profile is below the tuned threshold. Consider an engagement or checkout-friction review where appropriate.")
+            st.info("Action guidance: the score is below the selected cutoff. Use engagement or checkout-friction follow-up where the driver pattern supports it.")
+
+        explanation_col, action_col = st.columns([1.2, 0.8], gap="large")
+        with explanation_col:
+            st.markdown("### Customer-level SHAP drivers")
+            st.caption("These are actual local SHAP values for the newly entered row. Positive values increase and negative values decrease the model's purchase likelihood on the log-odds scale.")
+            contribution_view = live_result["contributions"].head(6).loc[:, ["direction", "feature", "shap_value"]]
+            st.dataframe(contribution_view.style.format({"shap_value": "{:+.4f}"}), hide_index=True, width="stretch")
+        with action_col:
+            st.markdown("### Decision-support recommendation")
+            st.write(f"**{action}**")
+            st.caption("The recommendation uses simple, inspectable probability and engagement rules. It is not a second machine-learning model.")
+            st.markdown("**How to use it**")
+            st.markdown(
+                "- Use promotion candidates for limited, monitored offers.\n"
+                "- Review engagement and cart signals before intervening.\n"
+                "- Treat the output as decision support, not an automated guarantee."
+            )
+        for note in live_result["notes"]:
+            st.warning(note)
 
     st.markdown("### Batch prediction from CSV")
     upload = st.file_uploader("Upload customer rows as CSV", type="csv")
@@ -361,8 +438,10 @@ if view == "SHAP viewer":
     global_cols = st.columns(2, gap="large")
     with global_cols[0]:
         image_panel(FIGURES_DIR / "shap_global_bar_best_model.png", "Global importance · mean absolute SHAP")
+        chart_interpretation("Features near the top have the greatest average influence on model predictions across the held-out sample.")
     with global_cols[1]:
         image_panel(FIGURES_DIR / "shap_global_beeswarm_best_model.png", "Global direction and magnitude")
+        chart_interpretation("Point position indicates whether feature values pushed predictions upward or downward; spread shows variation across customers.")
 
     st.markdown("### Inspect a local explanation")
     example_options = shap_examples["example_type"].astype(str).tolist()
@@ -376,6 +455,7 @@ if view == "SHAP viewer":
     with local_cols[0]:
         local_path = FIGURES_DIR / f"shap_local_{selected_example}.png"
         image_panel(local_path, f"{selected_example.replace('_', ' ').title()} prediction waterfall")
+        chart_interpretation("Bars pushing right increase the purchase score; bars pushing left reduce it for this real held-out customer example.")
     with local_cols[1]:
         local_metrics = st.columns(2)
         local_metrics[0].metric("Probability", f"{selected_row['probability']:.4f}")
@@ -415,6 +495,7 @@ if view == "Business insights":
     with chart_col:
         st.markdown("#### Action mix")
         st.bar_chart(action_counts.set_index("Action"), color="#19a8a5", horizontal=True)
+        chart_interpretation("This chart summarises how the transparent Phase 5 action rules distributed the held-out customer records.")
     with note_col:
         caveat_match = re.search(r"At the tuned threshold, held-out precision[^\n]+", business_summary)
         caveat = caveat_match.group(0) if caveat_match else "See the saved Phase 5 summary for the precision caveat."
@@ -447,6 +528,7 @@ if view == "Adaptive experiment":
         "The random STAND-IN fallback was not used. This remains an offline experiment, not production drift monitoring."
     )
     image_panel(FIGURES_DIR / "adaptive_before_after.png", "Observed adaptive decision comparison")
+    chart_interpretation("The later chronological batch is assessed against an explicit F1-drop trigger; the chart reports the observed result without forcing retraining.")
     st.dataframe(adaptive_table.style.format(precision=4), hide_index=True, width="stretch")
     with st.expander("Open the complete adaptive experiment summary"):
         st.code(adaptive_summary, language=None)

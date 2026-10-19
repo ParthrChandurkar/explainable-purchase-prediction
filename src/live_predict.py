@@ -11,6 +11,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+import shap
 
 
 def build_input_schema(model: Any) -> dict[str, dict[str, Any]]:
@@ -160,3 +161,45 @@ def score_live_rows(
         for probability, (_, row) in zip(probabilities, prepared.iterrows())
     ]
     return scored, notes
+
+
+def readable_transformed_feature_names(model: Any) -> np.ndarray:
+    """Return the saved pipeline's encoded feature names without UI prefixes."""
+    names = model.estimator.named_steps["preprocessor"].get_feature_names_out()
+    return np.asarray([str(name).split("__", maxsplit=1)[-1] for name in names])
+
+
+def explain_live_row(
+    model: Any,
+    prepared_row: pd.DataFrame,
+    explainer: Any,
+) -> pd.DataFrame:
+    """Return actual local SHAP contributions for one newly entered row.
+
+    ``explainer`` is built from a fixed sample of the original training split in
+    the dashboard.  It never fits or retrains the classifier; it only explains
+    the saved Logistic Regression prediction on SHAP's log-odds scale.
+    """
+    transformed = model.estimator.named_steps["preprocessor"].transform(prepared_row)
+    explanation = explainer(transformed)
+    values = np.asarray(explanation.values)
+    if values.ndim == 2:
+        values = values[0]
+    elif values.ndim == 3:
+        values = values[0, :, 1]
+    else:
+        raise ValueError("Unexpected SHAP output shape for live prediction.")
+
+    contributions = pd.DataFrame(
+        {
+            "feature": readable_transformed_feature_names(model),
+            "shap_value": values.astype(float),
+        }
+    )
+    contributions["direction"] = np.where(
+        contributions["shap_value"] >= 0,
+        "Increases purchase likelihood",
+        "Decreases purchase likelihood",
+    )
+    contributions["absolute_contribution"] = contributions["shap_value"].abs()
+    return contributions.sort_values("absolute_contribution", ascending=False).reset_index(drop=True)
